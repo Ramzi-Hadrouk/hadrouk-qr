@@ -1,507 +1,1051 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="fr" data-theme="light">
-    <head>
-        <meta charset="UTF-8" />
-        <meta
-            name="viewport"
-            content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
-        />
-        <meta name="theme-color" content="#ffffff" />
-        <title>QR Hadrouk - Générateur</title>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="theme-color" content="#1E3A5F">
+    <title>QR Hadrouk - Générateur & PDF</title>
 
-        <!-- Tailwind CSS & DaisyUI via CDN -->
-        <script src="https://cdn.tailwindcss.com"></script>
-        <link
-            href="https://cdn.jsdelivr.net/npm/daisyui@4.10.5/dist/full.min.css"
-            rel="stylesheet"
-            type="text/css"
-        />
+    <!-- Police -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@700;800&display=swap" rel="stylesheet">
 
-        <!-- Bibliothèque QR Code via CDN -->
-        <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+    <!-- Tailwind CSS & DaisyUI -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.10.5/dist/full.min.css" rel="stylesheet" type="text/css" />
 
-        <style>
-            /* --- Simulation de l'aspect "Application Mobile" --- */
-            html,
+    <!-- Bibliothèques : QR Code, Quill (Éditeur), jsPDF -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+    <link href="https://cdn.quilljs.com/1.3.6/quill.snow.css" rel="stylesheet">
+    <script src="https://cdn.quilljs.com/1.3.6/quill.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+    <style>
+        :root {
+            --ink-900: #16243D;
+            --ink-700: #1E3A5F;
+            --ink-600: #28507F;
+            --ink-500: #355E8C;
+            --amber-500: #F2A341;
+            --amber-600: #DB8B2A;
+            --paper: #FFFFFF;
+            --paper-soft: #F4F2EC;
+            --line: #E7E4DC;
+        }
+
+        html, body {
+            height: 100%;
+            margin: 0;
+            background-color: var(--paper-soft);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            overscroll-behavior: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .font-display {
+            font-family: 'Manrope', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        .app-shell {
+            display: flex;
+            flex-direction: column;
+            background-color: var(--paper);
+            width: 100%;
+            max-width: 480px;
+            margin: 0 auto;
+            min-height: 100vh;
+            position: relative;
+            box-shadow: 0 0 60px rgba(22, 36, 61, 0.10);
+        }
+
+        @media (min-width: 1024px) {
             body {
-                height: 100%;
-                margin: 0;
-                background-color: #e2e8f0; /* Fond gris clair pour le mode desktop */
-                font-family:
-                    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
-                    Helvetica, Arial, sans-serif;
-                overscroll-behavior: none;
-            }
-
-            /* Conteneur principal type "Téléphone" */
-            .app-shell {
                 display: flex;
-                flex-direction: column;
-                background-color: #ffffff;
-                width: 100%;
-                max-width: 480px;
-                margin: 0 auto;
-                min-height: 100vh;
-                position: relative;
-                box-shadow: 0 0 50px rgba(0, 0, 0, 0.1);
+                align-items: center;
+                justify-content: center;
+                padding: 24px;
             }
+            .app-shell {
+                max-width: 1320px;
+                height: 92vh;
+                max-height: 980px;
+                border-radius: 20px;
+                overflow: hidden;
+            }
+        }
 
-            /* Sur les écrans plus larges, on simule le bord du téléphone */
-            @media (min-width: 768px) {
-                body {
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    padding: 20px;
-                }
-                .app-shell {
-                    height: 90vh; /* Hauteur fixe pour l'effet téléphone */
-                    max-height: 900px;
-                    border-radius: 36px;
-                    border: 8px solid #1f2937;
-                    overflow: hidden;
-                }
-            }
+        .scrollable-content {
+            overflow-y: auto;
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        .scrollable-content::-webkit-scrollbar { display: none; }
 
-            /* Effet de scroll masqué mais fonctionnel */
-            .scrollable-content {
-                overflow-y: auto;
-                -ms-overflow-style: none;
-                scrollbar-width: none;
-            }
-            .scrollable-content::-webkit-scrollbar {
-                display: none;
-            }
+        .fade-in { animation: fadeIn 0.35s ease-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
 
-            /* Animation de transition pour la prévisualisation */
-            .fade-in {
-                animation: fadeIn 0.4s ease-in-out;
-            }
-            @keyframes fadeIn {
-                from {
-                    opacity: 0;
-                    transform: translateY(10px);
-                }
-                to {
-                    opacity: 1;
-                    transform: translateY(0);
-                }
-            }
-        </style>
-    </head>
-    <body class="select-none">
-        <div class="app-shell">
-            <!-- En-tête de l'application -->
-            <header
-                class="bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-center sticky top-0 z-10 shadow-sm"
-            >
-                <div class="flex items-center gap-3">
-                    <!-- Icône SVG QR Code -->
-                    <div
-                        class="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-white"
-                    >
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            class="h-6 w-6"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                            stroke-width="2"
-                        >
-                            <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"
-                            />
-                        </svg>
-                    </div>
-                    <div>
-                        <h1
-                            class="text-xl font-bold text-gray-900 leading-tight"
-                        >
-                            QR Hadrouk
-                        </h1>
-                        <p class="text-xs text-gray-400 leading-tight">
-                            Générateur Instantané
-                        </p>
-                    </div>
-                </div>
-            </header>
+        /* Focus visibility for accessibility, kept subtle */
+        a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visible {
+            outline: 2px solid var(--ink-500);
+            outline-offset: 2px;
+        }
 
-            <!-- Zone de contenu principal (Scrollable) -->
-            <main class="scrollable-content flex-1 px-6 py-5 bg-gray-50">
-                <!-- Message d'erreur -->
-                <div
-                    id="error-message"
-                    class="alert alert-error shadow-sm mb-5 hidden"
-                >
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        class="stroke-current shrink-0 h-6 w-6"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                    >
-                        <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            stroke-width="2"
-                            d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-                        />
+        /* ---- Step eyebrow markers ---- */
+        .step-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 22px;
+            height: 22px;
+            border-radius: 999px;
+            background: var(--ink-700);
+            color: #fff;
+            font-size: 12px;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        /* ---- Quill ---- */
+        .ql-toolbar {
+            border-top-left-radius: 0.65rem;
+            border-top-right-radius: 0.65rem;
+            background-color: #FAFAF7;
+            border: 1px solid var(--line);
+            border-bottom: none;
+        }
+        .ql-container {
+            border-bottom-left-radius: 0.65rem;
+            border-bottom-right-radius: 0.65rem;
+            border: 1px solid var(--line);
+            font-size: 15.5px;
+            min-height: 180px;
+            max-height: 320px;
+            overflow-y: auto;
+            font-family: inherit;
+        }
+        .ql-editor { padding: 14px 15px; }
+        .ql-editor.ql-blank::before {
+            color: #9CA3AF;
+            font-style: normal;
+            font-size: 14px;
+        }
+        .ql-snow .ql-picker { font-family: inherit; }
+        .ql-snow.ql-toolbar button:hover,
+        .ql-snow.ql-toolbar .ql-picker-label:hover { color: var(--ink-700); }
+        .ql-snow.ql-toolbar button.ql-active,
+        .ql-snow.ql-toolbar .ql-picker-label.ql-active { color: var(--ink-700); }
+        .ql-snow.ql-toolbar button:hover .ql-stroke,
+        .ql-snow.ql-toolbar button.ql-active .ql-stroke { stroke: var(--ink-700); }
+        .ql-snow.ql-toolbar button:hover .ql-fill,
+        .ql-snow.ql-toolbar button.ql-active .ql-fill { fill: var(--ink-700); }
+
+        /* ---- Ticket / hang-tag preview card ---- */
+        .ticket-card {
+            position: relative;
+            background: var(--paper);
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            box-shadow: 0 1px 2px rgba(22, 36, 61, 0.04);
+        }
+        .ticket-perforation {
+            position: relative;
+            height: 0;
+            border-top: 2px dashed #D9D6CC;
+            margin: 0 18px;
+        }
+        .ticket-perforation::before,
+        .ticket-perforation::after {
+            content: '';
+            position: absolute;
+            top: -9px;
+            width: 18px;
+            height: 18px;
+            border-radius: 999px;
+            background: var(--paper-soft);
+            border: 1px solid var(--line);
+        }
+        .ticket-perforation::before { left: -27px; }
+        .ticket-perforation::after { right: -27px; }
+        @media (min-width: 1024px) {
+            .ticket-perforation::before { left: -27px; }
+            .ticket-perforation::after { right: -27px; }
+        }
+
+        /* ---- Buttons ---- */
+        .btn-ink {
+            background: linear-gradient(135deg, var(--ink-700), var(--ink-600));
+            color: #fff;
+            border: none;
+        }
+        .btn-ink:hover { background: linear-gradient(135deg, #17304D, var(--ink-700)); }
+        .btn-ink:disabled, .btn-ink[disabled] {
+            background: #CBD2DB;
+            color: #fff;
+            opacity: 1;
+        }
+        .btn-ink-outline {
+            background: transparent;
+            border: 1.5px solid var(--ink-700);
+            color: var(--ink-700);
+        }
+        .btn-ink-outline:hover { background: rgba(30, 58, 95, 0.06); }
+        .btn-ink-outline:disabled, .btn-ink-outline[disabled] {
+            border-color: #D7DBE1;
+            color: #B3BAC4;
+            background: transparent;
+        }
+
+        /* ---- Toasts ---- */
+        #toast-container {
+            position: fixed;
+            left: 50%;
+            bottom: 92px;
+            transform: translateX(-50%);
+            z-index: 60;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            pointer-events: none;
+            width: 100%;
+            padding: 0 16px;
+        }
+        .app-toast {
+            background: var(--ink-900);
+            color: #fff;
+            font-size: 13px;
+            font-weight: 600;
+            padding: 9px 16px;
+            border-radius: 999px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+            opacity: 0;
+            transform: translateY(8px);
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            max-width: 100%;
+            text-align: center;
+        }
+        .app-toast-in { opacity: 1; transform: translateY(0); }
+
+        footer.app-footer {
+            padding-bottom: max(12px, env(safe-area-inset-bottom));
+        }
+
+        .qr-frame-icon rect { shape-rendering: crispEdges; }
+    </style>
+</head>
+<body>
+    <div class="app-shell">
+
+        <!-- En-tête -->
+        <header class="bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-between sticky top-0 z-10 shadow-sm select-none">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center" style="background: linear-gradient(135deg, #1E3A5F, #28507F);">
+                    <svg class="qr-frame-icon" width="22" height="22" viewBox="0 0 22 22" fill="none">
+                        <rect x="1" y="1" width="7" height="7" rx="1.2" stroke="white" stroke-width="1.6"/>
+                        <rect x="3.3" y="3.3" width="2.4" height="2.4" fill="white"/>
+                        <rect x="14" y="1" width="7" height="7" rx="1.2" stroke="white" stroke-width="1.6"/>
+                        <rect x="16.3" y="3.3" width="2.4" height="2.4" fill="white"/>
+                        <rect x="1" y="14" width="7" height="7" rx="1.2" stroke="white" stroke-width="1.6"/>
+                        <rect x="3.3" y="16.3" width="2.4" height="2.4" fill="white"/>
+                        <rect x="14" y="14" width="3" height="3" fill="white"/>
+                        <rect x="18" y="14" width="3" height="3" fill="white"/>
+                        <rect x="14" y="18" width="3" height="3" fill="white"/>
                     </svg>
-                    <span id="error-text"
-                        >Veuillez entrer un texte ou une URL.</span
-                    >
+                </div>
+                <div>
+                    <h1 class="font-display text-xl font-extrabold text-gray-900 leading-tight">QR Hadrouk</h1>
+                    <p class="text-xs text-gray-400 leading-tight">Générateur & Étiquette PDF</p>
+                </div>
+            </div>
+        </header>
+
+        <!-- Contenu Principal -->
+        <main class="scrollable-content flex-1 p-5 sm:p-6 bg-[var(--paper-soft)] lg:grid lg:grid-cols-2 lg:gap-10 lg:p-8">
+
+            <!-- Colonne Gauche : Formulaire -->
+            <div class="flex flex-col gap-5">
+
+                <div id="error-message" class="alert alert-error shadow-sm hidden" role="alert" aria-live="assertive">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="stroke-current shrink-0 h-5 w-5" fill="none" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" /></svg>
+                    <span id="error-text" class="text-sm">Veuillez entrer un texte ou une URL.</span>
                 </div>
 
-                <!-- Carte Formulaire -->
-                <div
-                    class="card bg-white border border-gray-100 shadow-sm mb-5"
-                >
-                    <div class="card-body p-5 gap-4">
-                        <!-- Changement : Zone de texte (Textarea) au lieu d'un input simple -->
-                        <div class="form-control">
-                            <label class="label pb-1">
-                                <span
-                                    class="label-text font-semibold text-gray-700"
-                                    >Texte ou URL *</span
-                                >
-                            </label>
-                            <textarea
-                                id="text-input"
-                                rows="3"
-                                placeholder="Entrez votre texte ou lien ici..."
-                                class="textarea textarea-bordered w-full bg-gray-50 focus:bg-white border-gray-200 text-base"
-                                autocomplete="off"
-                            ></textarea>
+                <!-- Étape 1 : Détails produit -->
+                <div class="card bg-white border border-gray-100 shadow-sm">
+                    <div class="card-body p-5 sm:p-6 gap-3">
+                        <div class="flex items-center gap-2.5">
+                            <span class="step-badge">1</span>
+                            <span class="font-display font-bold text-gray-800">Détails produit</span>
+                            <span class="badge badge-ghost badge-sm text-gray-400 font-normal">Optionnel</span>
                         </div>
-
-                        <div class="form-control">
-                            <label class="label pb-1">
-                                <span
-                                    class="label-text font-semibold text-gray-700"
-                                    >Titre / Étiquette</span
-                                >
-                            </label>
-                            <input
-                                type="text"
-                                id="label-input"
-                                placeholder="Ex: Mon Site Web"
-                                class="input input-bordered w-full bg-gray-50 focus:bg-white border-gray-200 text-base"
-                                autocomplete="off"
-                            />
+                        <p class="text-xs text-gray-400 -mt-1 ml-[30px]">Texte mis en forme affiché en haut du PDF.</p>
+                        <div id="editor-container">
+                            <div id="editor"></div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Zone de Prévisualisation -->
-                <div id="preview-area" class="hidden fade-in">
-                    <!-- Réduction des paddings et de la taille du QR code -->
-                    <div
-                        class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 text-center"
-                    >
-                        <div class="flex justify-center mb-3">
-                            <div
-                                class="p-2 bg-white rounded-xl border border-gray-100 shadow-xs"
-                            >
-                                <!-- Taille réduite (w-48 h-48 = 192px) pour tenir sans scroll -->
-                                <canvas
-                                    id="qrcode-canvas"
-                                    class="w-48 h-48 max-w-full"
-                                ></canvas>
+                <!-- Étape 2 : QR Code -->
+                <div class="card bg-white border border-gray-100 shadow-sm">
+                    <div class="card-body p-5 sm:p-6 gap-4">
+                        <div class="flex items-center gap-2.5">
+                            <span class="step-badge">2</span>
+                            <span class="font-display font-bold text-gray-800">Contenu du QR code</span>
+                            <span class="badge badge-sm border-none font-normal" style="background:#FDEFD9; color:#B5650C;">Obligatoire</span>
+                        </div>
+
+                        <div class="form-control">
+                            <label for="text-input" class="label pb-1">
+                                <span class="label-text font-semibold text-gray-800">Texte ou URL</span>
+                            </label>
+                            <textarea id="text-input" rows="3" placeholder="Lien ou texte à encoder dans le QR code..." class="textarea textarea-bordered w-full bg-gray-50 focus:bg-white border-gray-200 text-base" autocomplete="off" aria-describedby="char-count"></textarea>
+                            <div class="flex items-center justify-between mt-1.5">
+                                <span class="text-[11px] text-gray-400">Aperçu en direct pendant la saisie</span>
+                                <span id="char-count" class="text-[11px] text-gray-400">0 caractère</span>
                             </div>
                         </div>
-                        <h2
-                            id="label-display"
-                            class="text-base font-bold text-gray-800 break-words"
-                        ></h2>
+
+                        <div class="form-control">
+                            <label for="label-input" class="label pb-1">
+                                <span class="label-text font-semibold text-gray-800">Titre sous le QR code</span>
+                            </label>
+                            <input type="text" id="label-input" placeholder="Ex: Scannez-moi" class="input input-bordered w-full bg-gray-50 focus:bg-white border-gray-200 text-base" autocomplete="off">
+                        </div>
                     </div>
                 </div>
-            </main>
 
-            <!-- Barre d'actions inférieure (Type App Mobile) -->
-            <footer
-                class="bg-white border-t border-gray-100 p-3 grid grid-cols-3 gap-3 sticky bottom-0"
-            >
-                <button
-                    id="clear-btn"
-                    class="btn btn-ghost border border-gray-200 text-gray-600"
-                    disabled
-                >
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        class="h-5 w-5"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        stroke-width="2"
-                    >
-                        <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3"
-                        />
-                    </svg>
-                    <span class="hidden sm:inline">Effacer</span>
-                </button>
+            </div>
 
-                <button
-                    id="download-btn"
-                    class="btn btn-success text-white"
-                    disabled
-                >
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        class="h-5 w-5"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        stroke-width="2"
-                    >
-                        <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                        />
-                    </svg>
-                    <span class="hidden sm:inline">PNG</span>
-                </button>
+            <!-- Colonne Droite : Aperçu (Desktop) -->
+            <div class="hidden lg:flex flex-col">
+                <div class="ticket-card flex-1 flex flex-col items-center justify-center text-center p-8 relative overflow-hidden">
 
-                <button
-                    id="generate-btn"
-                    class="btn btn-primary text-white col-span-1"
-                >
-                    <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        class="h-5 w-5"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        stroke-width="2"
-                    >
-                        <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            d="M13 10V3L4 14h7v7l9-11h-7z"
-                        />
-                    </svg>
-                    Générer
-                </button>
-            </footer>
-        </div>
+                    <div id="preview-empty-desktop" class="flex flex-col items-center text-gray-300 select-none">
+                        <svg class="qr-frame-icon mb-4 opacity-70" width="64" height="64" viewBox="0 0 22 22" fill="none">
+                            <rect x="1" y="1" width="7" height="7" rx="1.2" stroke="#D9D6CC" stroke-width="1.4"/>
+                            <rect x="3.3" y="3.3" width="2.4" height="2.4" fill="#D9D6CC"/>
+                            <rect x="14" y="1" width="7" height="7" rx="1.2" stroke="#D9D6CC" stroke-width="1.4"/>
+                            <rect x="16.3" y="3.3" width="2.4" height="2.4" fill="#D9D6CC"/>
+                            <rect x="1" y="14" width="7" height="7" rx="1.2" stroke="#D9D6CC" stroke-width="1.4"/>
+                            <rect x="3.3" y="16.3" width="2.4" height="2.4" fill="#D9D6CC"/>
+                        </svg>
+                        <p class="text-gray-400 font-medium text-sm max-w-[220px]">Votre QR code apparaîtra ici dès que vous saisissez un texte.</p>
+                    </div>
 
-        <script>
-            document.addEventListener("DOMContentLoaded", () => {
-                // Récupération des éléments
-                const textInput = document.getElementById("text-input");
-                const labelInput = document.getElementById("label-input");
-                const generateBtn = document.getElementById("generate-btn");
-                const downloadBtn = document.getElementById("download-btn");
-                const clearBtn = document.getElementById("clear-btn");
-                const errorMessageBox =
-                    document.getElementById("error-message");
-                const errorText = document.getElementById("error-text");
-                const previewArea = document.getElementById("preview-area");
-                const canvas = document.getElementById("qrcode-canvas");
-                const labelDisplay = document.getElementById("label-display");
+                    <div id="preview-area-desktop" class="hidden w-full flex-col items-center">
+                        <div id="desktop-canvas-wrapper" class="p-3 bg-white rounded-2xl border border-gray-100 mb-5 inline-flex"></div>
+                        <div class="ticket-perforation w-full mb-5"></div>
+                        <h2 id="desktop-label-display" class="text-lg font-bold text-gray-800 break-words px-4"></h2>
+                    </div>
+                </div>
+            </div>
 
-                let currentQRData = null;
+            <!-- Aperçu Mobile -->
+            <div id="preview-empty-mobile" class="lg:hidden mt-1 py-6 flex flex-col items-center text-gray-300 select-none">
+                <svg class="qr-frame-icon mb-2 opacity-70" width="40" height="40" viewBox="0 0 22 22" fill="none">
+                    <rect x="1" y="1" width="7" height="7" rx="1.2" stroke="#D9D6CC" stroke-width="1.4"/>
+                    <rect x="3.3" y="3.3" width="2.4" height="2.4" fill="#D9D6CC"/>
+                    <rect x="14" y="1" width="7" height="7" rx="1.2" stroke="#D9D6CC" stroke-width="1.4"/>
+                    <rect x="16.3" y="3.3" width="2.4" height="2.4" fill="#D9D6CC"/>
+                    <rect x="1" y="14" width="7" height="7" rx="1.2" stroke="#D9D6CC" stroke-width="1.4"/>
+                    <rect x="3.3" y="16.3" width="2.4" height="2.4" fill="#D9D6CC"/>
+                </svg>
+                <p class="text-gray-400 text-xs text-center max-w-[220px]">Le QR code apparaîtra ici dès que vous saisissez un texte.</p>
+            </div>
+            <div id="preview-area-mobile" class="lg:hidden hidden mt-1">
+                <div class="ticket-card p-5 text-center">
+                    <div class="flex justify-center mb-5">
+                        <div id="mobile-canvas-wrapper" class="p-2.5 bg-white rounded-xl border border-gray-100">
+                            <canvas id="qrcode-canvas" class="w-48 h-48 max-w-full" aria-label="Aperçu du QR code généré"></canvas>
+                        </div>
+                    </div>
+                    <div class="ticket-perforation mb-5"></div>
+                    <h2 id="label-display" class="text-base font-bold text-gray-800 break-words"></h2>
+                </div>
+            </div>
 
-                /**
-                 * Génère le QR Code sur le Canvas et met à jour l'UI
-                 */
-                function generateQR() {
-                    const text = textInput.value.trim();
-                    const label = labelInput.value.trim();
+        </main>
 
-                    // Validation
-                    if (text === "") {
-                        errorText.textContent =
-                            "Veuillez entrer un texte ou une URL pour générer le QR code.";
-                        errorMessageBox.classList.remove("hidden");
-                        previewArea.classList.add("hidden");
-                        downloadBtn.disabled = true;
-                        clearBtn.disabled = true;
-                        textInput.focus();
+        <!-- Barre d'actions -->
+        <footer class="app-footer bg-white border-t border-gray-100 p-3 grid grid-cols-3 gap-3 sticky bottom-0">
+            <button id="clear-btn" class="btn btn-ghost border border-gray-200 text-gray-600" disabled aria-label="Effacer tout le contenu">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3" /></svg>
+                <span class="hidden sm:inline">Effacer</span>
+            </button>
+
+            <button id="download-png-btn" class="btn btn-ink-outline" disabled aria-label="Télécharger en PNG">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                PNG
+            </button>
+
+            <button id="download-pdf-btn" class="btn btn-ink" disabled aria-label="Télécharger l'étiquette PDF A4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                PDF A4
+            </button>
+        </footer>
+
+        <div id="toast-container" aria-live="polite"></div>
+    </div>
+    <script>
+document.addEventListener('DOMContentLoaded', () => {
+
+    /* =========================================================
+       0. INITIALISATION
+    ========================================================= */
+    const quill = new Quill('#editor', {
+        theme: 'snow',
+        modules: {
+            toolbar: [
+                [{ 'header': [1, 2, 3, false] }],
+                ['bold', 'italic', 'underline'],
+                [{ 'color': [] }, { 'background': [] }],
+                [{ 'align': [] }],
+                [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+                ['clean']
+            ]
+        },
+        placeholder: 'Nom, référence, description... (apparaîtra en haut du PDF)'
+    });
+
+    const textInput = document.getElementById('text-input');
+    const labelInput = document.getElementById('label-input');
+    const charCount = document.getElementById('char-count');
+
+    const downloadPngBtn = document.getElementById('download-png-btn');
+    const downloadPdfBtn = document.getElementById('download-pdf-btn');
+    const clearBtn = document.getElementById('clear-btn');
+
+    const errorMessageBox = document.getElementById('error-message');
+    const errorText = document.getElementById('error-text');
+
+    const previewAreaMobile = document.getElementById('preview-area-mobile');
+    const previewEmptyMobile = document.getElementById('preview-empty-mobile');
+    const previewAreaDesktop = document.getElementById('preview-area-desktop');
+    const previewEmptyDesktop = document.getElementById('preview-empty-desktop');
+
+    const canvas = document.getElementById('qrcode-canvas');
+    const labelDisplay = document.getElementById('label-display');
+    const toastContainer = document.getElementById('toast-container');
+
+    let currentQRData = null;
+    let debounceTimer = null;
+    let resizeTimer = null;
+
+    /* =========================================================
+       1. UTILITAIRES
+    ========================================================= */
+    function colorToRgb(colorString) {
+        if (!colorString) return [0, 0, 0];
+        if (colorString.startsWith('rgb')) {
+            const m = colorString.match(/[\d.]+/g);
+            return m ? [parseInt(m[0], 10), parseInt(m[1], 10), parseInt(m[2], 10)] : [0, 0, 0];
+        }
+        let hex = colorString.replace('#', '');
+        if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+        const r = /^([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+        return r ? [parseInt(r[1], 16), parseInt(r[2], 16), parseInt(r[3], 16)] : [0, 0, 0];
+    }
+
+    function showError(message) {
+        errorText.textContent = message;
+        errorMessageBox.classList.remove('hidden');
+        errorMessageBox.classList.add('fade-in');
+    }
+
+    function hideError() {
+        errorMessageBox.classList.add('hidden');
+    }
+
+    function showToast(message) {
+        const el = document.createElement('div');
+        el.className = 'app-toast';
+        el.setAttribute('role', 'status');
+        el.textContent = message;
+        toastContainer.appendChild(el);
+        requestAnimationFrame(() => el.classList.add('app-toast-in'));
+        setTimeout(() => {
+            el.classList.remove('app-toast-in');
+            setTimeout(() => el.remove(), 220);
+        }, 2000);
+    }
+
+    function setButtonLoading(btn, isLoading) {
+        if (isLoading) {
+            if (!btn.dataset.label) btn.dataset.label = btn.innerHTML;
+            btn.innerHTML = '<span class="loading loading-spinner loading-sm"></span><span>Génération...</span>';
+            btn.disabled = true;
+        } else {
+            if (btn.dataset.label) btn.innerHTML = btn.dataset.label;
+            btn.disabled = !currentQRData;
+        }
+    }
+
+    function wrapCanvasText(ctx, text, maxWidth) {
+        const words = text.split(/\s+/).filter(Boolean);
+        const lines = [];
+        let current = '';
+        words.forEach(word => {
+            const test = current ? current + ' ' + word : word;
+            if (ctx.measureText(test).width > maxWidth && current) {
+                lines.push(current);
+                current = word;
+            } else {
+                current = test;
+            }
+        });
+        if (current) lines.push(current);
+        return lines.length ? lines : [''];
+    }
+
+    /* =========================================================
+       2. GÉNÉRATION DU QR CODE (live, débouncé)
+    ========================================================= */
+    function updateCharCount() {
+        const len = textInput.value.length;
+        charCount.textContent = len + ' caractère' + (len > 1 ? 's' : '');
+        charCount.classList.toggle('text-amber-600', len > 400);
+        charCount.classList.toggle('font-semibold', len > 400);
+    }
+
+    function scheduleGenerate() {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(generateQR, 300);
+    }
+
+    function resetPreview() {
+        currentQRData = null;
+        previewAreaMobile.classList.add('hidden');
+        previewEmptyMobile.classList.remove('hidden');
+        previewAreaDesktop.classList.add('hidden');
+        previewEmptyDesktop.classList.remove('hidden');
+        downloadPngBtn.disabled = true;
+        downloadPdfBtn.disabled = true;
+        clearBtn.disabled = (textInput.value.trim() === '' && labelInput.value.trim() === '' && quill.getText().trim() === '');
+    }
+
+    function generateQR() {
+        const text = textInput.value.trim();
+        const label = labelInput.value.trim();
+
+        hideError();
+
+        if (text === '') {
+            resetPreview();
+            return;
+        }
+
+        let qr;
+        try {
+            qr = qrcode(0, 'M');
+            qr.addData(text);
+            qr.make();
+        } catch (err) {
+            resetPreview();
+            showError('Ce texte est trop long pour générer un QR code lisible. Essayez de le raccourcir.');
+            return;
+        }
+
+        const moduleCount = qr.getModuleCount();
+        let cellSize = 10;
+        if (moduleCount * cellSize > 1200) {
+            cellSize = Math.max(4, Math.floor(1200 / moduleCount));
+        }
+        const padding = cellSize * 2;
+        const canvasSize = moduleCount * cellSize + padding * 2;
+
+        canvas.width = canvasSize;
+        canvas.height = canvasSize;
+        canvas.style.width = '100%';
+        canvas.style.height = 'auto';
+        const ctx = canvas.getContext('2d');
+
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#0f172a';
+        for (let row = 0; row < moduleCount; row++) {
+            for (let col = 0; col < moduleCount; col++) {
+                if (qr.isDark(row, col)) {
+                    ctx.fillRect(padding + col * cellSize, padding + row * cellSize, cellSize, cellSize);
+                }
+            }
+        }
+
+        currentQRData = { text, label, qr, moduleCount, cellSize, padding };
+
+        labelDisplay.textContent = label || 'Sans titre';
+        renderPreview();
+
+        downloadPngBtn.disabled = false;
+        downloadPdfBtn.disabled = false;
+        clearBtn.disabled = false;
+    }
+
+    function renderPreview() {
+        if (!currentQRData) return;
+
+        if (window.innerWidth >= 1024) {
+            previewAreaMobile.classList.add('hidden');
+            previewEmptyMobile.classList.remove('hidden');
+
+            previewEmptyDesktop.classList.add('hidden');
+            previewAreaDesktop.classList.remove('hidden');
+            previewAreaDesktop.classList.add('fade-in');
+
+            const wrapper = document.getElementById('desktop-canvas-wrapper');
+            wrapper.innerHTML = '';
+            wrapper.appendChild(canvas);
+            canvas.style.width = '240px';
+            canvas.style.height = '240px';
+
+            const titleDisplay = document.getElementById('desktop-label-display');
+            titleDisplay.textContent = currentQRData.label || 'Sans titre';
+        } else {
+            previewAreaDesktop.classList.add('hidden');
+            previewEmptyDesktop.classList.remove('hidden');
+
+            const mobileWrapper = document.getElementById('mobile-canvas-wrapper');
+            mobileWrapper.innerHTML = '';
+            mobileWrapper.appendChild(canvas);
+            canvas.style.width = '192px';
+            canvas.style.height = '192px';
+
+            previewEmptyMobile.classList.add('hidden');
+            previewAreaMobile.classList.remove('hidden');
+            previewAreaMobile.classList.add('fade-in');
+        }
+    }
+
+    /* =========================================================
+       3. TÉLÉCHARGEMENT PNG
+    ========================================================= */
+    function downloadPNG() {
+        if (!currentQRData) return;
+
+        const { label, qr, moduleCount, cellSize, padding } = currentQRData;
+        const qrSize = moduleCount * cellSize + padding * 2;
+
+        const dlCanvas = document.createElement('canvas');
+        const ctx = dlCanvas.getContext('2d');
+
+        const fontSize = 32;
+        let labelLines = [];
+        if (label) {
+            ctx.font = 'bold ' + fontSize + 'px Arial, sans-serif';
+            labelLines = wrapCanvasText(ctx, label, qrSize - 60);
+        }
+        const labelHeight = label ? (labelLines.length * (fontSize + 12) + 30) : 30;
+
+        dlCanvas.width = qrSize;
+        dlCanvas.height = qrSize + labelHeight;
+
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, dlCanvas.width, dlCanvas.height);
+
+        ctx.fillStyle = '#0f172a';
+        for (let row = 0; row < moduleCount; row++) {
+            for (let col = 0; col < moduleCount; col++) {
+                if (qr.isDark(row, col)) {
+                    ctx.fillRect(padding + col * cellSize, padding + row * cellSize, cellSize, cellSize);
+                }
+            }
+        }
+
+        if (label) {
+            ctx.fillStyle = '#0f172a';
+            ctx.font = 'bold ' + fontSize + 'px Arial, sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            let ly = qrSize + 38;
+            labelLines.forEach(line => {
+                ctx.fillText(line, dlCanvas.width / 2, ly);
+                ly += fontSize + 12;
+            });
+        }
+
+        const link = document.createElement('a');
+        link.href = dlCanvas.toDataURL('image/png');
+        link.download = 'qr-hadrouk-' + Date.now() + '.png';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        showToast('Image PNG téléchargée');
+    }
+
+    /* =========================================================
+       4. MOTEUR DE MISE EN PAGE PDF
+       (parseur DOM Quill -> lignes -> pages, fidèle au rendu écran)
+    ========================================================= */
+    const MM_PER_PT = 0.352778;
+
+    function getAlign(el) {
+        if (el.classList) {
+            if (el.classList.contains('ql-align-center')) return 'center';
+            if (el.classList.contains('ql-align-right')) return 'right';
+            if (el.classList.contains('ql-align-justify')) return 'justify';
+        }
+        if (el.style && el.style.textAlign) return el.style.textAlign;
+        return 'left';
+    }
+
+    function getIndentLevel(el) {
+        const m = (el.className || '').match(/ql-indent-(\d)/);
+        return m ? parseInt(m[1], 10) : 0;
+    }
+
+    function collectTokens(node, style, tokens) {
+        if (node.nodeType === Node.TEXT_NODE) {
+            const raw = node.textContent;
+            if (raw === '') return;
+            const parts = raw.split(/(\s+)/).filter(p => p !== '');
+            parts.forEach(p => tokens.push(Object.assign({ text: p }, style)));
+            return;
+        }
+        if (node.nodeType !== Node.ELEMENT_NODE) return;
+
+        const tag = node.tagName.toLowerCase();
+        if (tag === 'br') {
+            tokens.push(Object.assign({ text: '', brk: true }, style));
+            return;
+        }
+
+        const s = Object.assign({}, style);
+        if (tag === 'strong' || tag === 'b') s.bold = true;
+        if (tag === 'em' || tag === 'i') s.italic = true;
+        if (tag === 'u') s.underline = true;
+        if (node.style) {
+            if (node.style.color) s.color = node.style.color;
+            if (node.style.backgroundColor) s.background = node.style.backgroundColor;
+        }
+
+        Array.from(node.childNodes).forEach(child => collectTokens(child, s, tokens));
+    }
+
+    function makeBlock(el, listType, idx) {
+        const tag = el.tagName.toLowerCase();
+        let fontSize = 11.5, bold = false, spaceBefore = 0, spaceAfter = 2.4;
+
+        if (tag === 'h1') { fontSize = 20; bold = true; spaceBefore = 3.2; spaceAfter = 2.8; }
+        else if (tag === 'h2') { fontSize = 16; bold = true; spaceBefore = 2.6; spaceAfter = 2.4; }
+        else if (tag === 'h3') { fontSize = 13.5; bold = true; spaceBefore = 2.2; spaceAfter = 2; }
+
+        const align = getAlign(el);
+        const indentLevel = getIndentLevel(el);
+        let indent = indentLevel * 6;
+        let listPrefix = null;
+
+        if (listType) {
+            indent = 5 + indentLevel * 6;
+            listPrefix = listType === 'ol' ? (idx + '. ') : '•  ';
+        }
+
+        const tokens = [];
+        collectTokens(el, { bold: bold, italic: false, underline: false, color: '#000000', background: null, fontSize: fontSize }, tokens);
+
+        return { tag, align, indent, listPrefix, fontSize, spaceBefore, spaceAfter, tokens };
+    }
+
+    function buildBlocks(root) {
+        const blocks = [];
+        Array.from(root.childNodes).forEach(node => {
+            if (node.nodeType !== Node.ELEMENT_NODE) return;
+            const tag = node.tagName.toLowerCase();
+            if (tag === 'ol' || tag === 'ul') {
+                let idx = 0;
+                Array.from(node.children).forEach(li => {
+                    if (li.tagName.toLowerCase() !== 'li') return;
+                    idx++;
+                    blocks.push(makeBlock(li, tag, idx));
+                });
+            } else {
+                blocks.push(makeBlock(node, null, 0));
+            }
+        });
+        return blocks;
+    }
+
+    function setFontFor(doc, tok) {
+        let fontType = 'normal';
+        if (tok.bold && tok.italic) fontType = 'bolditalic';
+        else if (tok.bold) fontType = 'bold';
+        else if (tok.italic) fontType = 'italic';
+        doc.setFont('helvetica', fontType);
+        doc.setFontSize(tok.fontSize);
+    }
+
+    function isWhitespaceToken(tok) {
+        return !tok.brk && /^\s+$/.test(tok.text);
+    }
+
+    function wrapBlock(doc, block, maxWidth) {
+        let tokens = block.tokens.slice();
+
+        if (block.listPrefix) {
+            tokens = [{ text: block.listPrefix, bold: false, italic: false, underline: false, color: '#000000', background: null, fontSize: block.fontSize }].concat(tokens);
+        }
+
+        while (tokens.length && isWhitespaceToken(tokens[0])) tokens.shift();
+        while (tokens.length && isWhitespaceToken(tokens[tokens.length - 1])) tokens.pop();
+
+        const usableWidth = Math.max(10, maxWidth - block.indent);
+        const lines = [];
+        let current = [];
+        let currentWidth = 0;
+
+        tokens.forEach(tok => {
+            if (tok.brk) {
+                lines.push(current);
+                current = [];
+                currentWidth = 0;
+                return;
+            }
+            setFontFor(doc, tok);
+            const w = doc.getTextWidth(tok.text);
+            const isSpace = isWhitespaceToken(tok);
+
+            if (currentWidth + w > usableWidth && current.length > 0 && !isSpace) {
+                lines.push(current);
+                current = [];
+                currentWidth = 0;
+            }
+            if (current.length === 0 && isSpace) return;
+
+            current.push(tok);
+            currentWidth += w;
+        });
+
+        lines.push(current);
+        return lines;
+    }
+
+    function drawLine(doc, line, block, geometry, y, isLastLine) {
+        const xBase = geometry.margin + block.indent;
+        const usableWidth = Math.max(10, geometry.maxWidth - block.indent);
+
+        const widths = line.map(t => { setFontFor(doc, t); return doc.getTextWidth(t.text); });
+        const totalWidth = widths.reduce((a, b) => a + b, 0);
+
+        let startX = xBase;
+        let extraPerGap = 0;
+
+        if (block.align === 'center') {
+            startX = xBase + Math.max(0, (usableWidth - totalWidth) / 2);
+        } else if (block.align === 'right') {
+            startX = xBase + Math.max(0, (usableWidth - totalWidth));
+        } else if (block.align === 'justify' && !isLastLine) {
+            const gaps = line.filter(isWhitespaceToken).length;
+            if (gaps > 0 && totalWidth < usableWidth) {
+                extraPerGap = (usableWidth - totalWidth) / gaps;
+            }
+        }
+
+        let x = startX;
+        line.forEach((tok, i) => {
+            const w = widths[i];
+            const isSpace = isWhitespaceToken(tok);
+
+            if (!isSpace && tok.text.length) {
+                setFontFor(doc, tok);
+                if (tok.background) {
+                    const bg = colorToRgb(tok.background);
+                    doc.setFillColor(bg[0], bg[1], bg[2]);
+                    const h = tok.fontSize * MM_PER_PT * 1.05;
+                    doc.rect(x, y - tok.fontSize * MM_PER_PT * 0.78, w, h, 'F');
+                }
+                const c = colorToRgb(tok.color);
+                doc.setTextColor(c[0], c[1], c[2]);
+                doc.text(tok.text, x, y);
+
+                if (tok.underline) {
+                    doc.setDrawColor(c[0], c[1], c[2]);
+                    doc.setLineWidth(0.25);
+                    const ly = y + tok.fontSize * MM_PER_PT * 0.14;
+                    doc.line(x, ly, x + w, ly);
+                }
+            }
+
+            x += w;
+            if (isSpace) x += extraPerGap;
+        });
+    }
+
+    function renderBlocks(doc, blocks, geometry) {
+        let y = geometry.margin;
+
+        function ensureSpace(h) {
+            if (y + h > geometry.pageHeight - geometry.margin) {
+                doc.addPage();
+                y = geometry.margin;
+            }
+        }
+
+        blocks.forEach((block, bIdx) => {
+            const lines = wrapBlock(doc, block, geometry.maxWidth);
+            const isEmptyBlock = lines.length === 1 && lines[0].length === 0;
+
+            if (bIdx > 0) y += block.spaceBefore;
+
+            if (isEmptyBlock) {
+                ensureSpace(block.fontSize * MM_PER_PT * 1.2);
+                y += block.fontSize * MM_PER_PT * 1.2;
+            } else {
+                lines.forEach((line, lineIdx) => {
+                    if (line.length === 0) {
+                        y += block.fontSize * MM_PER_PT * 1.2;
                         return;
                     }
-
-                    // Cacher l'erreur
-                    errorMessageBox.classList.add("hidden");
-
-                    // Génération de la matrice
-                    const qr = qrcode(0, "M");
-                    qr.addData(text);
-                    qr.make();
-
-                    const moduleCount = qr.getModuleCount();
-                    const cellSize = 10; // Haute résolution pour le téléchargement
-                    const padding = 20; // Quiet zone
-                    const canvasSize = moduleCount * cellSize + padding * 2;
-
-                    // Configuration du Canvas
-                    canvas.width = canvasSize;
-                    canvas.height = canvasSize;
-                    canvas.style.width = "100%"; // Adaptation écran
-                    canvas.style.height = "auto";
-                    const ctx = canvas.getContext("2d");
-
-                    // Fond blanc
-                    ctx.fillStyle = "#ffffff";
-                    ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-                    // Dessin des modules
-                    ctx.fillStyle = "#000000";
-                    for (let row = 0; row < moduleCount; row++) {
-                        for (let col = 0; col < moduleCount; col++) {
-                            if (qr.isDark(row, col)) {
-                                ctx.fillRect(
-                                    padding + col * cellSize,
-                                    padding + row * cellSize,
-                                    cellSize,
-                                    cellSize,
-                                );
-                            }
-                        }
-                    }
-
-                    // Affichage de l'étiquette dans l'UI
-                    labelDisplay.textContent = label || "Sans titre";
-
-                    // Affichage des éléments
-                    previewArea.classList.remove("hidden");
-                    previewArea.classList.add("fade-in");
-                    downloadBtn.disabled = false;
-                    clearBtn.disabled = false;
-
-                    // Sauvegarde pour le téléchargement
-                    currentQRData = {
-                        text: text,
-                        label: label,
-                        qr: qr,
-                        moduleCount: moduleCount,
-                        cellSize: cellSize,
-                        padding: padding,
-                    };
-                }
-
-                /**
-                 * Télécharge le QR Code et l'étiquette assemblés en PNG
-                 */
-                function downloadQR() {
-                    if (!currentQRData) return;
-
-                    const { label, qr, moduleCount, cellSize, padding } =
-                        currentQRData;
-                    const qrSize = moduleCount * cellSize + padding * 2;
-
-                    // Création d'un canvas d'exportation
-                    const dlCanvas = document.createElement("canvas");
-                    const ctx = dlCanvas.getContext("2d");
-
-                    // Calcul de la taille totale
-                    const labelHeight = label ? 80 : 30;
-                    const totalHeight = qrSize + labelHeight;
-
-                    dlCanvas.width = qrSize;
-                    dlCanvas.height = totalHeight;
-
-                    // Fond blanc global
-                    ctx.fillStyle = "#ffffff";
-                    ctx.fillRect(0, 0, dlCanvas.width, dlCanvas.height);
-
-                    // Redessiner le QR Code
-                    ctx.fillStyle = "#000000";
-                    for (let row = 0; row < moduleCount; row++) {
-                        for (let col = 0; col < moduleCount; col++) {
-                            if (qr.isDark(row, col)) {
-                                ctx.fillRect(
-                                    padding + col * cellSize,
-                                    padding + row * cellSize,
-                                    cellSize,
-                                    cellSize,
-                                );
-                            }
-                        }
-                    }
-
-                    // Dessiner l'étiquette
-                    if (label) {
-                        ctx.fillStyle = "#1f2937"; // Gris foncé
-                        ctx.font = "bold 32px sans-serif";
-                        ctx.textAlign = "center";
-                        ctx.textBaseline = "middle";
-
-                        const maxWidth = dlCanvas.width - 40;
-                        let words = label.split(" ");
-                        let line = "";
-                        let y = qrSize + 40;
-
-                        // Retour à la ligne
-                        if (ctx.measureText(label).width > maxWidth) {
-                            for (let n = 0; n < words.length; n++) {
-                                let testLine = line + words[n] + " ";
-                                if (
-                                    ctx.measureText(testLine).width >
-                                        maxWidth &&
-                                    n > 0
-                                ) {
-                                    ctx.fillText(line, dlCanvas.width / 2, y);
-                                    line = words[n] + " ";
-                                    y += 40;
-                                } else {
-                                    line = testLine;
-                                }
-                            }
-                            ctx.fillText(line, dlCanvas.width / 2, y);
-                        } else {
-                            ctx.fillText(label, dlCanvas.width / 2, y);
-                        }
-                    }
-
-                    // --- CORRECTION DU TÉLÉCHARGEMENT ---
-                    // Convertir le canvas en URL de données
-                    const dataUrl = dlCanvas.toDataURL("image/png");
-
-                    // Créer un lien temporaire et l'ajouter au DOM (nécessaire pour Safari/mobile)
-                    const link = document.createElement("a");
-                    link.href = dataUrl;
-                    link.download = "qr-hadrouk-" + Date.now() + ".png";
-                    document.body.appendChild(link);
-
-                    // Déclencher le clic
-                    link.click();
-
-                    // Nettoyer le DOM
-                    document.body.removeChild(link);
-                }
-
-                /**
-                 * Réinitialise l'application
-                 */
-                function clearAll() {
-                    textInput.value = "";
-                    labelInput.value = "";
-                    errorMessageBox.classList.add("hidden");
-                    previewArea.classList.add("hidden");
-                    downloadBtn.disabled = true;
-                    clearBtn.disabled = true;
-                    currentQRData = null;
-                    textInput.focus();
-                }
-
-                // Écouteurs d'événements
-                generateBtn.addEventListener("click", generateQR);
-                downloadBtn.addEventListener("click", downloadQR);
-                clearBtn.addEventListener("click", clearAll);
-
-                // Gestion de la touche Entrée pour le champ titre (déclenche la génération)
-                labelInput.addEventListener("keypress", (e) => {
-                    if (e.key === "Enter") {
-                        e.preventDefault();
-                        generateQR();
-                    }
+                    const lineHeight = Math.max.apply(null, line.map(t => t.fontSize)) * MM_PER_PT * 1.28;
+                    ensureSpace(lineHeight);
+                    drawLine(doc, line, block, geometry, y, lineIdx === lines.length - 1);
+                    y += lineHeight;
                 });
+            }
+
+            y += block.spaceAfter;
+        });
+
+        return y;
+    }
+
+    /* =========================================================
+       5. TÉLÉCHARGEMENT PDF
+    ========================================================= */
+    function downloadPDF() {
+        if (!currentQRData) return;
+        setButtonLoading(downloadPdfBtn, true);
+
+        setTimeout(() => {
+            try {
+                buildPDFDocument();
+                showToast('PDF téléchargé');
+            } catch (err) {
+                console.error(err);
+                showError('Une erreur est survenue lors de la génération du PDF. Essayez de raccourcir le contenu.');
+            } finally {
+                setButtonLoading(downloadPdfBtn, false);
+            }
+        }, 30);
+    }
+
+    function buildPDFDocument() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('p', 'mm', 'a4');
+
+        const geometry = {
+            pageWidth: 210,
+            pageHeight: 297,
+            margin: 20,
+            maxWidth: 210 - 20 * 2
+        };
+
+        const blocks = buildBlocks(quill.root);
+        const hasContent = blocks.some(b => b.tokens.some(t => !t.brk && t.text.trim() !== ''));
+
+        let y = geometry.margin;
+        if (hasContent) {
+            y = renderBlocks(doc, blocks, geometry);
+        }
+
+        const imgSize = 70;
+        const qrReserve = 95;
+        let qrY;
+
+        if (hasContent) {
+            if (y + qrReserve > geometry.pageHeight - geometry.margin) {
+                doc.addPage();
+                y = geometry.margin;
+            }
+            const remaining = geometry.pageHeight - geometry.margin - y;
+            qrY = y + Math.max(8, (remaining - imgSize - 18) / 2);
+        } else {
+            qrY = (geometry.pageHeight - imgSize) / 2 - 12;
+        }
+
+        const imgX = (geometry.pageWidth - imgSize) / 2;
+        const imgData = canvas.toDataURL('image/png');
+        doc.addImage(imgData, 'PNG', imgX, qrY, imgSize, imgSize);
+
+        if (currentQRData.label) {
+            doc.setFont('helvetica', 'bold');
+            doc.setFontSize(15);
+            doc.setTextColor(15, 23, 42);
+            const labelLines = doc.splitTextToSize(currentQRData.label, geometry.maxWidth);
+            let labelY = qrY + imgSize + 11;
+            labelLines.forEach(line => {
+                if (labelY > geometry.pageHeight - 12) {
+                    doc.addPage();
+                    labelY = geometry.margin + 10;
+                }
+                doc.text(line, geometry.pageWidth / 2, labelY, { align: 'center' });
+                labelY += 7;
             });
-        </script>
-    </body>
+        }
+
+        doc.save('etiquette-qr-hadrouk.pdf');
+    }
+
+    /* =========================================================
+       6. EFFACER / RESET
+    ========================================================= */
+    function clearAll() {
+        textInput.value = '';
+        labelInput.value = '';
+        quill.setContents([]);
+        updateCharCount();
+        hideError();
+        resetPreview();
+        textInput.focus();
+        showToast('Contenu effacé');
+    }
+
+    /* =========================================================
+       7. ÉCOUTEURS D'ÉVÉNEMENTS
+    ========================================================= */
+    textInput.addEventListener('input', () => {
+        updateCharCount();
+        hideError();
+        scheduleGenerate();
+    });
+
+    textInput.addEventListener('keydown', (e) => {
+        if ((e.key === 'Enter') && (e.ctrlKey || e.metaKey)) {
+            e.preventDefault();
+            clearTimeout(debounceTimer);
+            generateQR();
+        }
+    });
+
+    labelInput.addEventListener('input', () => {
+        hideError();
+        scheduleGenerate();
+    });
+
+    labelInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            clearTimeout(debounceTimer);
+            generateQR();
+        }
+    });
+
+    downloadPngBtn.addEventListener('click', downloadPNG);
+    downloadPdfBtn.addEventListener('click', downloadPDF);
+    clearBtn.addEventListener('click', clearAll);
+
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(renderPreview, 150);
+    });
+
+    /* =========================================================
+       8. ÉTAT INITIAL
+    ========================================================= */
+    updateCharCount();
+    resetPreview();
+});
+    </script>
+</body>
 </html>
