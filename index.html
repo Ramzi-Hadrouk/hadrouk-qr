@@ -1,0 +1,507 @@
+<!doctype html>
+<html lang="fr" data-theme="light">
+    <head>
+        <meta charset="UTF-8" />
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+        />
+        <meta name="theme-color" content="#ffffff" />
+        <title>QR Hadrouk - Générateur</title>
+
+        <!-- Tailwind CSS & DaisyUI via CDN -->
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link
+            href="https://cdn.jsdelivr.net/npm/daisyui@4.10.5/dist/full.min.css"
+            rel="stylesheet"
+            type="text/css"
+        />
+
+        <!-- Bibliothèque QR Code via CDN -->
+        <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+
+        <style>
+            /* --- Simulation de l'aspect "Application Mobile" --- */
+            html,
+            body {
+                height: 100%;
+                margin: 0;
+                background-color: #e2e8f0; /* Fond gris clair pour le mode desktop */
+                font-family:
+                    -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                    Helvetica, Arial, sans-serif;
+                overscroll-behavior: none;
+            }
+
+            /* Conteneur principal type "Téléphone" */
+            .app-shell {
+                display: flex;
+                flex-direction: column;
+                background-color: #ffffff;
+                width: 100%;
+                max-width: 480px;
+                margin: 0 auto;
+                min-height: 100vh;
+                position: relative;
+                box-shadow: 0 0 50px rgba(0, 0, 0, 0.1);
+            }
+
+            /* Sur les écrans plus larges, on simule le bord du téléphone */
+            @media (min-width: 768px) {
+                body {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 20px;
+                }
+                .app-shell {
+                    height: 90vh; /* Hauteur fixe pour l'effet téléphone */
+                    max-height: 900px;
+                    border-radius: 36px;
+                    border: 8px solid #1f2937;
+                    overflow: hidden;
+                }
+            }
+
+            /* Effet de scroll masqué mais fonctionnel */
+            .scrollable-content {
+                overflow-y: auto;
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+            .scrollable-content::-webkit-scrollbar {
+                display: none;
+            }
+
+            /* Animation de transition pour la prévisualisation */
+            .fade-in {
+                animation: fadeIn 0.4s ease-in-out;
+            }
+            @keyframes fadeIn {
+                from {
+                    opacity: 0;
+                    transform: translateY(10px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+        </style>
+    </head>
+    <body class="select-none">
+        <div class="app-shell">
+            <!-- En-tête de l'application -->
+            <header
+                class="bg-white border-b border-gray-100 px-6 py-4 flex items-center justify-center sticky top-0 z-10 shadow-sm"
+            >
+                <div class="flex items-center gap-3">
+                    <!-- Icône SVG QR Code -->
+                    <div
+                        class="w-10 h-10 rounded-xl bg-primary flex items-center justify-center text-white"
+                    >
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            class="h-6 w-6"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            stroke-width="2"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"
+                            />
+                        </svg>
+                    </div>
+                    <div>
+                        <h1
+                            class="text-xl font-bold text-gray-900 leading-tight"
+                        >
+                            QR Hadrouk
+                        </h1>
+                        <p class="text-xs text-gray-400 leading-tight">
+                            Générateur Instantané
+                        </p>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Zone de contenu principal (Scrollable) -->
+            <main class="scrollable-content flex-1 px-6 py-5 bg-gray-50">
+                <!-- Message d'erreur -->
+                <div
+                    id="error-message"
+                    class="alert alert-error shadow-sm mb-5 hidden"
+                >
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="stroke-current shrink-0 h-6 w-6"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                    </svg>
+                    <span id="error-text"
+                        >Veuillez entrer un texte ou une URL.</span
+                    >
+                </div>
+
+                <!-- Carte Formulaire -->
+                <div
+                    class="card bg-white border border-gray-100 shadow-sm mb-5"
+                >
+                    <div class="card-body p-5 gap-4">
+                        <!-- Changement : Zone de texte (Textarea) au lieu d'un input simple -->
+                        <div class="form-control">
+                            <label class="label pb-1">
+                                <span
+                                    class="label-text font-semibold text-gray-700"
+                                    >Texte ou URL *</span
+                                >
+                            </label>
+                            <textarea
+                                id="text-input"
+                                rows="3"
+                                placeholder="Entrez votre texte ou lien ici..."
+                                class="textarea textarea-bordered w-full bg-gray-50 focus:bg-white border-gray-200 text-base"
+                                autocomplete="off"
+                            ></textarea>
+                        </div>
+
+                        <div class="form-control">
+                            <label class="label pb-1">
+                                <span
+                                    class="label-text font-semibold text-gray-700"
+                                    >Titre / Étiquette</span
+                                >
+                            </label>
+                            <input
+                                type="text"
+                                id="label-input"
+                                placeholder="Ex: Mon Site Web"
+                                class="input input-bordered w-full bg-gray-50 focus:bg-white border-gray-200 text-base"
+                                autocomplete="off"
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Zone de Prévisualisation -->
+                <div id="preview-area" class="hidden fade-in">
+                    <!-- Réduction des paddings et de la taille du QR code -->
+                    <div
+                        class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 text-center"
+                    >
+                        <div class="flex justify-center mb-3">
+                            <div
+                                class="p-2 bg-white rounded-xl border border-gray-100 shadow-xs"
+                            >
+                                <!-- Taille réduite (w-48 h-48 = 192px) pour tenir sans scroll -->
+                                <canvas
+                                    id="qrcode-canvas"
+                                    class="w-48 h-48 max-w-full"
+                                ></canvas>
+                            </div>
+                        </div>
+                        <h2
+                            id="label-display"
+                            class="text-base font-bold text-gray-800 break-words"
+                        ></h2>
+                    </div>
+                </div>
+            </main>
+
+            <!-- Barre d'actions inférieure (Type App Mobile) -->
+            <footer
+                class="bg-white border-t border-gray-100 p-3 grid grid-cols-3 gap-3 sticky bottom-0"
+            >
+                <button
+                    id="clear-btn"
+                    class="btn btn-ghost border border-gray-200 text-gray-600"
+                    disabled
+                >
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="h-5 w-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        stroke-width="2"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3"
+                        />
+                    </svg>
+                    <span class="hidden sm:inline">Effacer</span>
+                </button>
+
+                <button
+                    id="download-btn"
+                    class="btn btn-success text-white"
+                    disabled
+                >
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="h-5 w-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        stroke-width="2"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+                        />
+                    </svg>
+                    <span class="hidden sm:inline">PNG</span>
+                </button>
+
+                <button
+                    id="generate-btn"
+                    class="btn btn-primary text-white col-span-1"
+                >
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="h-5 w-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        stroke-width="2"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            d="M13 10V3L4 14h7v7l9-11h-7z"
+                        />
+                    </svg>
+                    Générer
+                </button>
+            </footer>
+        </div>
+
+        <script>
+            document.addEventListener("DOMContentLoaded", () => {
+                // Récupération des éléments
+                const textInput = document.getElementById("text-input");
+                const labelInput = document.getElementById("label-input");
+                const generateBtn = document.getElementById("generate-btn");
+                const downloadBtn = document.getElementById("download-btn");
+                const clearBtn = document.getElementById("clear-btn");
+                const errorMessageBox =
+                    document.getElementById("error-message");
+                const errorText = document.getElementById("error-text");
+                const previewArea = document.getElementById("preview-area");
+                const canvas = document.getElementById("qrcode-canvas");
+                const labelDisplay = document.getElementById("label-display");
+
+                let currentQRData = null;
+
+                /**
+                 * Génère le QR Code sur le Canvas et met à jour l'UI
+                 */
+                function generateQR() {
+                    const text = textInput.value.trim();
+                    const label = labelInput.value.trim();
+
+                    // Validation
+                    if (text === "") {
+                        errorText.textContent =
+                            "Veuillez entrer un texte ou une URL pour générer le QR code.";
+                        errorMessageBox.classList.remove("hidden");
+                        previewArea.classList.add("hidden");
+                        downloadBtn.disabled = true;
+                        clearBtn.disabled = true;
+                        textInput.focus();
+                        return;
+                    }
+
+                    // Cacher l'erreur
+                    errorMessageBox.classList.add("hidden");
+
+                    // Génération de la matrice
+                    const qr = qrcode(0, "M");
+                    qr.addData(text);
+                    qr.make();
+
+                    const moduleCount = qr.getModuleCount();
+                    const cellSize = 10; // Haute résolution pour le téléchargement
+                    const padding = 20; // Quiet zone
+                    const canvasSize = moduleCount * cellSize + padding * 2;
+
+                    // Configuration du Canvas
+                    canvas.width = canvasSize;
+                    canvas.height = canvasSize;
+                    canvas.style.width = "100%"; // Adaptation écran
+                    canvas.style.height = "auto";
+                    const ctx = canvas.getContext("2d");
+
+                    // Fond blanc
+                    ctx.fillStyle = "#ffffff";
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                    // Dessin des modules
+                    ctx.fillStyle = "#000000";
+                    for (let row = 0; row < moduleCount; row++) {
+                        for (let col = 0; col < moduleCount; col++) {
+                            if (qr.isDark(row, col)) {
+                                ctx.fillRect(
+                                    padding + col * cellSize,
+                                    padding + row * cellSize,
+                                    cellSize,
+                                    cellSize,
+                                );
+                            }
+                        }
+                    }
+
+                    // Affichage de l'étiquette dans l'UI
+                    labelDisplay.textContent = label || "Sans titre";
+
+                    // Affichage des éléments
+                    previewArea.classList.remove("hidden");
+                    previewArea.classList.add("fade-in");
+                    downloadBtn.disabled = false;
+                    clearBtn.disabled = false;
+
+                    // Sauvegarde pour le téléchargement
+                    currentQRData = {
+                        text: text,
+                        label: label,
+                        qr: qr,
+                        moduleCount: moduleCount,
+                        cellSize: cellSize,
+                        padding: padding,
+                    };
+                }
+
+                /**
+                 * Télécharge le QR Code et l'étiquette assemblés en PNG
+                 */
+                function downloadQR() {
+                    if (!currentQRData) return;
+
+                    const { label, qr, moduleCount, cellSize, padding } =
+                        currentQRData;
+                    const qrSize = moduleCount * cellSize + padding * 2;
+
+                    // Création d'un canvas d'exportation
+                    const dlCanvas = document.createElement("canvas");
+                    const ctx = dlCanvas.getContext("2d");
+
+                    // Calcul de la taille totale
+                    const labelHeight = label ? 80 : 30;
+                    const totalHeight = qrSize + labelHeight;
+
+                    dlCanvas.width = qrSize;
+                    dlCanvas.height = totalHeight;
+
+                    // Fond blanc global
+                    ctx.fillStyle = "#ffffff";
+                    ctx.fillRect(0, 0, dlCanvas.width, dlCanvas.height);
+
+                    // Redessiner le QR Code
+                    ctx.fillStyle = "#000000";
+                    for (let row = 0; row < moduleCount; row++) {
+                        for (let col = 0; col < moduleCount; col++) {
+                            if (qr.isDark(row, col)) {
+                                ctx.fillRect(
+                                    padding + col * cellSize,
+                                    padding + row * cellSize,
+                                    cellSize,
+                                    cellSize,
+                                );
+                            }
+                        }
+                    }
+
+                    // Dessiner l'étiquette
+                    if (label) {
+                        ctx.fillStyle = "#1f2937"; // Gris foncé
+                        ctx.font = "bold 32px sans-serif";
+                        ctx.textAlign = "center";
+                        ctx.textBaseline = "middle";
+
+                        const maxWidth = dlCanvas.width - 40;
+                        let words = label.split(" ");
+                        let line = "";
+                        let y = qrSize + 40;
+
+                        // Retour à la ligne
+                        if (ctx.measureText(label).width > maxWidth) {
+                            for (let n = 0; n < words.length; n++) {
+                                let testLine = line + words[n] + " ";
+                                if (
+                                    ctx.measureText(testLine).width >
+                                        maxWidth &&
+                                    n > 0
+                                ) {
+                                    ctx.fillText(line, dlCanvas.width / 2, y);
+                                    line = words[n] + " ";
+                                    y += 40;
+                                } else {
+                                    line = testLine;
+                                }
+                            }
+                            ctx.fillText(line, dlCanvas.width / 2, y);
+                        } else {
+                            ctx.fillText(label, dlCanvas.width / 2, y);
+                        }
+                    }
+
+                    // --- CORRECTION DU TÉLÉCHARGEMENT ---
+                    // Convertir le canvas en URL de données
+                    const dataUrl = dlCanvas.toDataURL("image/png");
+
+                    // Créer un lien temporaire et l'ajouter au DOM (nécessaire pour Safari/mobile)
+                    const link = document.createElement("a");
+                    link.href = dataUrl;
+                    link.download = "qr-hadrouk-" + Date.now() + ".png";
+                    document.body.appendChild(link);
+
+                    // Déclencher le clic
+                    link.click();
+
+                    // Nettoyer le DOM
+                    document.body.removeChild(link);
+                }
+
+                /**
+                 * Réinitialise l'application
+                 */
+                function clearAll() {
+                    textInput.value = "";
+                    labelInput.value = "";
+                    errorMessageBox.classList.add("hidden");
+                    previewArea.classList.add("hidden");
+                    downloadBtn.disabled = true;
+                    clearBtn.disabled = true;
+                    currentQRData = null;
+                    textInput.focus();
+                }
+
+                // Écouteurs d'événements
+                generateBtn.addEventListener("click", generateQR);
+                downloadBtn.addEventListener("click", downloadQR);
+                clearBtn.addEventListener("click", clearAll);
+
+                // Gestion de la touche Entrée pour le champ titre (déclenche la génération)
+                labelInput.addEventListener("keypress", (e) => {
+                    if (e.key === "Enter") {
+                        e.preventDefault();
+                        generateQR();
+                    }
+                });
+            });
+        </script>
+    </body>
+</html>
