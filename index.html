@@ -143,36 +143,9 @@
         .ql-snow.ql-toolbar button:hover .ql-fill,
         .ql-snow.ql-toolbar button.ql-active .ql-fill { fill: var(--ink-700); }
 
-        /* ---- Ticket / hang-tag preview card ---- */
-        .ticket-card {
-            position: relative;
-            background: var(--paper);
-            border: 1px solid var(--line);
-            border-radius: 18px;
-            box-shadow: 0 1px 2px rgba(22, 36, 61, 0.04);
-        }
-        .ticket-perforation {
-            position: relative;
-            height: 0;
-            border-top: 2px dashed #D9D6CC;
-            margin: 0 18px;
-        }
-        .ticket-perforation::before,
-        .ticket-perforation::after {
-            content: '';
-            position: absolute;
-            top: -9px;
-            width: 18px;
-            height: 18px;
-            border-radius: 999px;
-            background: var(--paper-soft);
-            border: 1px solid var(--line);
-        }
-        .ticket-perforation::before { left: -27px; }
-        .ticket-perforation::after { right: -27px; }
-        @media (min-width: 1024px) {
-            .ticket-perforation::before { left: -27px; }
-            .ticket-perforation::after { right: -27px; }
+        /* ---- QR live preview row ---- */
+        .qr-preview-row {
+            transition: background-color 0.2s ease, border-color 0.2s ease;
         }
 
         /* ---- Buttons ---- */
@@ -264,9 +237,9 @@
         </header>
 
         <!-- Contenu Principal -->
-        <main class="scrollable-content flex-1 p-5 sm:p-6 bg-[var(--paper-soft)] lg:grid lg:grid-cols-2 lg:gap-10 lg:p-8">
+        <main class="scrollable-content flex-1 p-5 sm:p-6 bg-[var(--paper-soft)] lg:grid lg:grid-cols-2 lg:gap-8 lg:p-8 lg:items-start">
 
-            <!-- Colonne Gauche : Formulaire -->
+            <!-- Colonne Gauche : QR Code -->
             <div class="flex flex-col gap-5">
 
                 <div id="error-message" class="alert alert-error shadow-sm hidden" role="alert" aria-live="assertive">
@@ -274,26 +247,11 @@
                     <span id="error-text" class="text-sm">Veuillez entrer un texte ou une URL.</span>
                 </div>
 
-                <!-- Étape 1 : Détails produit -->
-                <div class="card bg-white border border-gray-100 shadow-sm">
-                    <div class="card-body p-5 sm:p-6 gap-3">
-                        <div class="flex items-center gap-2.5">
-                            <span class="step-badge">1</span>
-                            <span class="font-display font-bold text-gray-800">Détails produit</span>
-                            <span class="badge badge-ghost badge-sm text-gray-400 font-normal">Optionnel</span>
-                        </div>
-                        <p class="text-xs text-gray-400 -mt-1 ml-[30px]">Texte mis en forme affiché en haut du PDF.</p>
-                        <div id="editor-container">
-                            <div id="editor"></div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Étape 2 : QR Code -->
+                <!-- Étape 1 : QR Code -->
                 <div class="card bg-white border border-gray-100 shadow-sm">
                     <div class="card-body p-5 sm:p-6 gap-4">
                         <div class="flex items-center gap-2.5">
-                            <span class="step-badge">2</span>
+                            <span class="step-badge">1</span>
                             <span class="font-display font-bold text-gray-800">Contenu du QR code</span>
                             <span class="badge badge-sm border-none font-normal" style="background:#FDEFD9; color:#B5650C;">Obligatoire</span>
                         </div>
@@ -315,56 +273,51 @@
                             </label>
                             <input type="text" id="label-input" placeholder="Ex: Scannez-moi" class="input input-bordered w-full bg-gray-50 focus:bg-white border-gray-200 text-base" autocomplete="off">
                         </div>
-                    </div>
-                </div>
 
-            </div>
+                        <!-- Aperçu compact en direct, sous les champs -->
+                        <div id="preview-empty" class="qr-preview-row flex items-center gap-3 px-3.5 py-3 rounded-xl border border-dashed border-gray-200 bg-gray-50/60 text-gray-400 select-none">
+                            <svg class="qr-frame-icon shrink-0 opacity-60" width="26" height="26" viewBox="0 0 22 22" fill="none">
+                                <rect x="1" y="1" width="7" height="7" rx="1.2" stroke="#D9D6CC" stroke-width="1.4"/>
+                                <rect x="3.3" y="3.3" width="2.4" height="2.4" fill="#D9D6CC"/>
+                                <rect x="14" y="1" width="7" height="7" rx="1.2" stroke="#D9D6CC" stroke-width="1.4"/>
+                                <rect x="16.3" y="3.3" width="2.4" height="2.4" fill="#D9D6CC"/>
+                                <rect x="1" y="14" width="7" height="7" rx="1.2" stroke="#D9D6CC" stroke-width="1.4"/>
+                                <rect x="3.3" y="16.3" width="2.4" height="2.4" fill="#D9D6CC"/>
+                            </svg>
+                            <p class="text-xs leading-snug">Votre QR code apparaîtra ici dès que vous saisissez un texte.</p>
+                        </div>
 
-            <!-- Colonne Droite : Aperçu (Desktop) -->
-            <div class="hidden lg:flex flex-col">
-                <div class="ticket-card flex-1 flex flex-col items-center justify-center text-center p-8 relative overflow-hidden">
-
-                    <div id="preview-empty-desktop" class="flex flex-col items-center text-gray-300 select-none">
-                        <svg class="qr-frame-icon mb-4 opacity-70" width="64" height="64" viewBox="0 0 22 22" fill="none">
-                            <rect x="1" y="1" width="7" height="7" rx="1.2" stroke="#D9D6CC" stroke-width="1.4"/>
-                            <rect x="3.3" y="3.3" width="2.4" height="2.4" fill="#D9D6CC"/>
-                            <rect x="14" y="1" width="7" height="7" rx="1.2" stroke="#D9D6CC" stroke-width="1.4"/>
-                            <rect x="16.3" y="3.3" width="2.4" height="2.4" fill="#D9D6CC"/>
-                            <rect x="1" y="14" width="7" height="7" rx="1.2" stroke="#D9D6CC" stroke-width="1.4"/>
-                            <rect x="3.3" y="16.3" width="2.4" height="2.4" fill="#D9D6CC"/>
-                        </svg>
-                        <p class="text-gray-400 font-medium text-sm max-w-[220px]">Votre QR code apparaîtra ici dès que vous saisissez un texte.</p>
-                    </div>
-
-                    <div id="preview-area-desktop" class="hidden w-full flex-col items-center">
-                        <div id="desktop-canvas-wrapper" class="p-3 bg-white rounded-2xl border border-gray-100 mb-5 inline-flex"></div>
-                        <div class="ticket-perforation w-full mb-5"></div>
-                        <h2 id="desktop-label-display" class="text-lg font-bold text-gray-800 break-words px-4"></h2>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Aperçu Mobile -->
-            <div id="preview-empty-mobile" class="lg:hidden mt-1 py-6 flex flex-col items-center text-gray-300 select-none">
-                <svg class="qr-frame-icon mb-2 opacity-70" width="40" height="40" viewBox="0 0 22 22" fill="none">
-                    <rect x="1" y="1" width="7" height="7" rx="1.2" stroke="#D9D6CC" stroke-width="1.4"/>
-                    <rect x="3.3" y="3.3" width="2.4" height="2.4" fill="#D9D6CC"/>
-                    <rect x="14" y="1" width="7" height="7" rx="1.2" stroke="#D9D6CC" stroke-width="1.4"/>
-                    <rect x="16.3" y="3.3" width="2.4" height="2.4" fill="#D9D6CC"/>
-                    <rect x="1" y="14" width="7" height="7" rx="1.2" stroke="#D9D6CC" stroke-width="1.4"/>
-                    <rect x="3.3" y="16.3" width="2.4" height="2.4" fill="#D9D6CC"/>
-                </svg>
-                <p class="text-gray-400 text-xs text-center max-w-[220px]">Le QR code apparaîtra ici dès que vous saisissez un texte.</p>
-            </div>
-            <div id="preview-area-mobile" class="lg:hidden hidden mt-1">
-                <div class="ticket-card p-5 text-center">
-                    <div class="flex justify-center mb-5">
-                        <div id="mobile-canvas-wrapper" class="p-2.5 bg-white rounded-xl border border-gray-100">
-                            <canvas id="qrcode-canvas" class="w-48 h-48 max-w-full" aria-label="Aperçu du QR code généré"></canvas>
+                        <div id="preview-area" class="qr-preview-row hidden items-center gap-3.5 px-3.5 py-3 rounded-xl border border-gray-100 bg-[var(--paper-soft)]" aria-live="polite">
+                            <div id="qr-canvas-wrapper" class="shrink-0 w-16 h-16 p-1.5 bg-white rounded-lg border border-gray-100 flex items-center justify-center overflow-hidden">
+                                <canvas id="qrcode-canvas" class="w-full h-full" aria-label="Aperçu du QR code généré"></canvas>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p id="label-display" class="text-sm font-bold text-gray-800 truncate"></p>
+                                <p class="text-[11px] text-gray-400">Aperçu en direct</p>
+                            </div>
+                            <button id="quick-download-btn" type="button" class="btn btn-circle btn-sm btn-ink shrink-0" aria-label="Télécharger le QR code en PNG">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                            </button>
                         </div>
                     </div>
-                    <div class="ticket-perforation mb-5"></div>
-                    <h2 id="label-display" class="text-base font-bold text-gray-800 break-words"></h2>
+                </div>
+
+            </div>
+
+            <!-- Colonne Droite : Détails produit (texte affiché dans le PDF) -->
+            <div class="flex flex-col gap-5">
+                <div class="card bg-white border border-gray-100 shadow-sm">
+                    <div class="card-body p-5 sm:p-6 gap-3">
+                        <div class="flex items-center gap-2.5">
+                            <span class="step-badge">2</span>
+                            <span class="font-display font-bold text-gray-800">Détails produit</span>
+                            <span class="badge badge-ghost badge-sm text-gray-400 font-normal">Optionnel</span>
+                        </div>
+                        <p class="text-xs text-gray-400 -mt-1 ml-[30px]">Texte mis en forme affiché en haut du PDF.</p>
+                        <div id="editor-container">
+                            <div id="editor"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -422,10 +375,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const errorMessageBox = document.getElementById('error-message');
     const errorText = document.getElementById('error-text');
 
-    const previewAreaMobile = document.getElementById('preview-area-mobile');
-    const previewEmptyMobile = document.getElementById('preview-empty-mobile');
-    const previewAreaDesktop = document.getElementById('preview-area-desktop');
-    const previewEmptyDesktop = document.getElementById('preview-empty-desktop');
+    const previewEmpty = document.getElementById('preview-empty');
+    const previewArea = document.getElementById('preview-area');
+    const qrCanvasWrapper = document.getElementById('qr-canvas-wrapper');
+    const quickDownloadBtn = document.getElementById('quick-download-btn');
 
     const canvas = document.getElementById('qrcode-canvas');
     const labelDisplay = document.getElementById('label-display');
@@ -433,7 +386,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let currentQRData = null;
     let debounceTimer = null;
-    let resizeTimer = null;
 
     /* =========================================================
        1. UTILITAIRES
@@ -518,10 +470,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function resetPreview() {
         currentQRData = null;
-        previewAreaMobile.classList.add('hidden');
-        previewEmptyMobile.classList.remove('hidden');
-        previewAreaDesktop.classList.add('hidden');
-        previewEmptyDesktop.classList.remove('hidden');
+        previewArea.classList.add('hidden');
+        previewArea.classList.remove('flex', 'fade-in');
+        previewEmpty.classList.remove('hidden');
         downloadPngBtn.disabled = true;
         downloadPdfBtn.disabled = true;
         clearBtn.disabled = (textInput.value.trim() === '' && labelInput.value.trim() === '' && quill.getText().trim() === '');
@@ -577,46 +528,24 @@ document.addEventListener('DOMContentLoaded', () => {
         currentQRData = { text, label, qr, moduleCount, cellSize, padding };
 
         labelDisplay.textContent = label || 'Sans titre';
-        renderPreview();
+        showPreview();
 
         downloadPngBtn.disabled = false;
         downloadPdfBtn.disabled = false;
         clearBtn.disabled = false;
     }
 
-    function renderPreview() {
+    function showPreview() {
         if (!currentQRData) return;
 
-        if (window.innerWidth >= 1024) {
-            previewAreaMobile.classList.add('hidden');
-            previewEmptyMobile.classList.remove('hidden');
+        previewEmpty.classList.add('hidden');
+        previewArea.classList.remove('hidden');
+        previewArea.classList.add('flex', 'fade-in');
 
-            previewEmptyDesktop.classList.add('hidden');
-            previewAreaDesktop.classList.remove('hidden');
-            previewAreaDesktop.classList.add('fade-in');
-
-            const wrapper = document.getElementById('desktop-canvas-wrapper');
-            wrapper.innerHTML = '';
-            wrapper.appendChild(canvas);
-            canvas.style.width = '240px';
-            canvas.style.height = '240px';
-
-            const titleDisplay = document.getElementById('desktop-label-display');
-            titleDisplay.textContent = currentQRData.label || 'Sans titre';
-        } else {
-            previewAreaDesktop.classList.add('hidden');
-            previewEmptyDesktop.classList.remove('hidden');
-
-            const mobileWrapper = document.getElementById('mobile-canvas-wrapper');
-            mobileWrapper.innerHTML = '';
-            mobileWrapper.appendChild(canvas);
-            canvas.style.width = '192px';
-            canvas.style.height = '192px';
-
-            previewEmptyMobile.classList.add('hidden');
-            previewAreaMobile.classList.remove('hidden');
-            previewAreaMobile.classList.add('fade-in');
-        }
+        qrCanvasWrapper.innerHTML = '';
+        qrCanvasWrapper.appendChild(canvas);
+        canvas.style.width = '100%';
+        canvas.style.height = '100%';
     }
 
     /* =========================================================
@@ -949,8 +878,8 @@ document.addEventListener('DOMContentLoaded', () => {
             y = renderBlocks(doc, blocks, geometry);
         }
 
-        const imgSize = 70;
-        const qrReserve = 95;
+        const imgSize = 48;
+        const qrReserve = 72;
         let qrY;
 
         if (hasContent) {
@@ -965,22 +894,29 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const imgX = (geometry.pageWidth - imgSize) / 2;
+
+        // Cadre décoratif léger autour du QR code (cohérent avec l'esthétique "étiquette" de l'app)
+        const framePad = 4.5;
+        doc.setDrawColor(231, 228, 220);
+        doc.setLineWidth(0.3);
+        doc.roundedRect(imgX - framePad, qrY - framePad, imgSize + framePad * 2, imgSize + framePad * 2, 3, 3, 'S');
+
         const imgData = canvas.toDataURL('image/png');
         doc.addImage(imgData, 'PNG', imgX, qrY, imgSize, imgSize);
 
         if (currentQRData.label) {
             doc.setFont('helvetica', 'bold');
-            doc.setFontSize(15);
+            doc.setFontSize(13.5);
             doc.setTextColor(15, 23, 42);
             const labelLines = doc.splitTextToSize(currentQRData.label, geometry.maxWidth);
-            let labelY = qrY + imgSize + 11;
+            let labelY = qrY + imgSize + framePad + 9;
             labelLines.forEach(line => {
                 if (labelY > geometry.pageHeight - 12) {
                     doc.addPage();
                     labelY = geometry.margin + 10;
                 }
                 doc.text(line, geometry.pageWidth / 2, labelY, { align: 'center' });
-                labelY += 7;
+                labelY += 6.5;
             });
         }
 
@@ -1033,12 +969,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     downloadPngBtn.addEventListener('click', downloadPNG);
     downloadPdfBtn.addEventListener('click', downloadPDF);
+    quickDownloadBtn.addEventListener('click', downloadPNG);
     clearBtn.addEventListener('click', clearAll);
-
-    window.addEventListener('resize', () => {
-        clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(renderPreview, 150);
-    });
 
     /* =========================================================
        8. ÉTAT INITIAL
